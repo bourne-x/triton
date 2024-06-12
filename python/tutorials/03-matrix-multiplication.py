@@ -108,6 +108,11 @@ You will specifically learn about:
 #
 # is just not going to cut it.
 #
+#======== BOURNE: pid retrieves the current block id along single dimension (MxN).
+#======== BOURNE: grid_n calculates the block size in the N dimension.
+#======== BOURNE: (pid_m, pid_n) is the current block id in 2 dimensions (grid_m, grid_n) 
+#======== BOURNE: row-major ordering: traverse all B blocks for each A block, A block is reused.
+#
 # One possible solution is to launch blocks in an order that promotes data reuse.
 # This can be done by 'super-grouping' blocks in groups of :code:`GROUP_M` rows before
 # switching to the next column:
@@ -133,6 +138,9 @@ You will specifically learn about:
 #    pid_m = first_pid_m + ((pid % num_pid_in_group) % group_size_m)
 #    # Col-id of the program in the *launch grid*
 #    pid_n = (pid % num_pid_in_group) // group_size_m
+#
+#======== BOURNE: pid_m = xx % group_size_m, pid_n = xx // group_size_m, colum-major
+#
 #
 # For example, in the following matmul where each matrix is 9 blocks by 9 blocks,
 # we can see that if we compute the output in row-major ordering, we need to load 90
