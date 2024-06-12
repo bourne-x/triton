@@ -190,6 +190,7 @@ x = torch.randn(1823, 781, device='cuda')
 y_triton = softmax(x)
 y_torch = torch.softmax(x, axis=1)
 assert torch.allclose(y_triton, y_torch), (y_triton, y_torch)
+#======== BOURNE: check if all elements of y_triton and y_torch are approximately equal within a certain tolerance (atol, rtol).
 
 # %%
 # As expected, the results are identical.
