@@ -36,8 +36,10 @@ def naive_softmax(x):
     """
     # read  MN elements ; write M  elements
     x_max = x.max(dim=1)[0]
+    #======== BOURNE: x.max(dim=1) returns a tuple containing two tensors: maximum values along dimension 1 and their indices.
     # read MN + M elements ; write MN elements
     z = x - x_max[:, None]
+    #======== BOURNE: [:, None] is a slicing operation that adds a new dimension to the tensor x_max
     # read  MN elements ; write MN elements
     numerator = torch.exp(z)
     # read  MN elements ; write M  elements
@@ -75,17 +77,28 @@ def softmax_kernel(output_ptr, input_ptr, input_row_stride, output_row_stride, n
                    num_stages: tl.constexpr):
     # starting row of the program
     row_start = tl.program_id(0)
+    #======== BOURNE: block id
     row_step = tl.num_programs(0)
+    #======== BOURNE: the grid size, number of blocks (is it related to SM ??????)
+    #======== BOURNE: not correct, each program (thread) processes one row per iteration. the tile size should be number of threads = row_step.
+    #======== BOURNE: here one program is a block contains many threads. The BLOCK_SIZE is one row, so the row_step = number of blocks = n_rows.
     for row_idx in tl.range(row_start, n_rows, row_step, num_stages=num_stages):
+    #======== BOURNE: by using num_stages, Triton can overlap computation and memory operations, improving performance through pipelining and staging.
+    #======== BOURNE: in a pipeline, a stage represents a distinct phase of the computation. For instance, loading data from memory, performing computations,
+    #======== BOURNE: and storing results back to memory could each be considered separate stages.
         # The stride represents how much we need to increase the pointer to advance 1 row
         row_start_ptr = input_ptr + row_idx * input_row_stride
         # The block size is the next power of two greater than n_cols, so we can fit each
         # row in a single block
         col_offsets = tl.arange(0, BLOCK_SIZE)
         input_ptrs = row_start_ptr + col_offsets
+        #======== BOURNE: the input_ptrs a tensor (vector) of memory addresses. GPU multiple threads can simultaneously perform load operations from different
+        #======== BOURNE: addresses specified in 'input_ptrs'
+        #======== BOURNE: but why it is col_offsets not BLOCK_SIZE ?????? multiple threads process the same row per iteration ??????
         # Load the row into SRAM, using a mask since BLOCK_SIZE may be > than n_cols
         mask = col_offsets < n_cols
         row = tl.load(input_ptrs, mask=mask, other=-float('inf'))
+        #======== BOURNE: pad with negative infinity
         # Subtract maximum for numerical stability
         row_minus_max = row - tl.max(row, axis=0)
         # Note that exponentiation in Triton is fast but approximate (i.e., think __expf in CUDA)

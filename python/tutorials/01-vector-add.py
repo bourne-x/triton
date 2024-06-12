@@ -61,11 +61,15 @@ def add(x: torch.Tensor, y: torch.Tensor):
     # We need to preallocate the output.
     output = torch.empty_like(x)
     assert x.is_cuda and y.is_cuda and output.is_cuda
+    #======== BOURNE: make sure x, y, output are located in the device global memory.
     n_elements = output.numel()
+    #======== BOURNE: x.numel() is the pytorch method to provide the number of elements.
     # The SPMD launch grid denotes the number of kernel instances that run in parallel.
     # It is analogous to CUDA launch grids. It can be either Tuple[int], or Callable(metaparameters) -> Tuple[int].
     # In this case, we use a 1D grid where the size is the number of blocks:
     grid = lambda meta: (triton.cdiv(n_elements, meta['BLOCK_SIZE']), )
+    #======== BOURNE: '(4,)' is one tuple which has a single element, the trailing comma is necessary. '(4)' is an integer within parentheses. 
+    #======== BOURNE: Syntax: lambda arguments: expression
     # NOTE:
     #  - Each torch.tensor object is implicitly converted into a pointer to its first element.
     #  - `triton.jit`'ed functions can be indexed with a launch grid to obtain a callable GPU kernel.
@@ -83,6 +87,7 @@ torch.manual_seed(0)
 size = 98432
 x = torch.rand(size, device='cuda')
 y = torch.rand(size, device='cuda')
+#======== BOURNE: the tensor is created directly on GPU which avoids the overhead of transfering data from CPU to GPU.
 output_torch = x + y
 output_triton = add(x, y)
 print(output_torch)
