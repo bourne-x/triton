@@ -135,19 +135,27 @@ def softmax(x):
     # You will see in the next tutorial how to auto-tune this value in a more natural
     # way so you don't have to come up with manual heuristics yourself.
     num_warps = 8
+    #======== BOURNE: increase the number of wraps could increase the thread-level parallelism, then improve the pipeline efficiency and hide more memory access overhead.
 
     # Number of software piepling stages.
     num_stages = 4 if SIZE_SMEM > 200000 else 2
+    #======== BOURNE: relates to the depth or complexity of the computation pipeline. a big number may increase the synchronization overhead.
 
     # Allocate output
     y = torch.empty_like(x)
 
     # pre-compile kernel to get register usage and compute thread occupancy.
     kernel, num_programs = kernels.get(BLOCK_SIZE, (None, 0))
+    #======== BOURNE: retrieve the value from dictionary kernels with the key 'BLOCK_SIZE', return the tuple '(None, 0)' if no this key.
     if kernel is None:
         kernel = softmax_kernel.warmup(y, x, x.stride(0), y.stride(0), n_rows, n_cols, BLOCK_SIZE=BLOCK_SIZE,
                                        num_stages=num_stages, num_warps=num_warps, grid=(1, ))
+        #======== BOURNE: where is warmup defined ?????? there is only one block ??????
+        #======== BOURNE: The purpose of the warmup function is typically to perform any necessary initialization or setup operations required by the kernel before
+        #======== BOURNE: it is executed with actual input data. This might include compiling the kernel code, allocating resources, or performing any pre-computation
+        #======== BOURNE: needed for efficient execution.
         kernel._init_handles()
+        #======== BOURNE: ensure that all necessary resources and handles are properly initialized before executing the kernel
         n_regs = kernel.n_regs
         size_smem = kernel.metadata.shared
         occupancy = NUM_REGS // (n_regs * WARP_SIZE * num_warps)
