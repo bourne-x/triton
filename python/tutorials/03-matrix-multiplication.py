@@ -127,6 +127,7 @@ You will specifically learn about:
 #    num_pid_n = tl.cdiv(N, BLOCK_SIZE_N)
 #    # Number of programs in group
 #    num_pid_in_group = GROUP_SIZE_M * num_pid_n
+#======== BOURNE: should it be GOURP_SIZE_M * N. Yes，num_pid_n = N , the block number here. 
 #    # Id of the group this program is in
 #    group_id = pid // num_pid_in_group
 #    # Row-id of the first program in the group
@@ -339,6 +340,7 @@ def matmul(a, b, activation=""):
     # Check constraints.
     assert a.shape[1] == b.shape[0], "Incompatible dimensions"
     assert a.is_contiguous(), "Matrix A must be contiguous"
+    #======== BOURNE: pytorch断言，确保数组元素在内存中连续存储。
     M, K = a.shape
     K, N = b.shape
     # Allocates output.
