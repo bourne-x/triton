@@ -57,6 +57,7 @@ def _dropout(
     x_keep = tl.load(x_keep_ptr + offsets, mask=mask)
     # The line below is the crucial part, described in the paragraph above!
     output = tl.where(x_keep, x / (1 - p), 0.0)
+    #======== BOURNE: tl.where(condition, x, y) returns elements from x where condition is true and elements from y where condition is false.
     # Write-back output
     tl.store(output_ptr + offsets, output, mask=mask)
 
@@ -82,7 +83,8 @@ print(tabulate.tabulate([
     ["keep mask"] + x_keep.tolist(),
     ["output"] + output.tolist(),
 ]))
-
+#======== BOURNE: tabulate to format the output table.
+#
 # %%
 # Seeded dropout
 # --------------
