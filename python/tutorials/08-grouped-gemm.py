@@ -91,6 +91,10 @@ def grouped_matmul_kernel(
     #======== BOURNE: does it mean the final tile processed in the previous run ??????
     for g in range(group_size):
     #======== BOURNE: will the for loop and below while loop be unrolled by the compiler for prallel execution ??????
+    #======== BOURNE: ChatGPT: This loop is likely not unrolled since each iteration potentially handles a different
+    #======== BOURNE: matrix with different dimensions and memory pointers. Instead, the outer for loop handles different
+    #======== BOURNE: GEMM problems sequentially within the kernel execution. The parallelism at this level can be achieved
+    #======== BOURNE: by launching multiple kernels, each handling a different GEMM problem.
         # get the gemm size of the current problem
         gm = tl.load(group_gemm_sizes + g * 3)
         gn = tl.load(group_gemm_sizes + g * 3 + 1)
@@ -100,6 +104,10 @@ def grouped_matmul_kernel(
         num_tiles = num_m_tiles * num_n_tiles
         # iterate through the tiles in the current gemm problem
         while (tile_idx >= last_problem_end and tile_idx < last_problem_end + num_tiles):
+        #======== BOURNE: The inner while loop processes tiles within a GEMM problem, with each iteration potentially handled
+        #======== BOURNE: by different threads in parallel. Vectorized operations using tl.arange and memory alignment hints (tl.multiple_of) 
+        #======== BOURNE: enable efficient parallel execution and optimization by the Triton compiler. The Triton compiler and runtime manage
+        #======== BOURNE: the parallel execution of these loops across the GPU's threads and blocks, ensuring efficient utilization of GPU resources.
             # pick up a tile from the current gemm problem
             k = gk
             lda = tl.load(g_lds + g * 3)
