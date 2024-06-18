@@ -72,6 +72,9 @@ def grouped_matmul_kernel(
     group_gemm_sizes,
     # device tensor of leading dimension sizes. its shape is [group_size, 3]
     # dim 0 is group_size, dim 1 is the values of <lda, ldb, ldc> of each gemm
+    #======== BOURNE: leading dimension size is stride between consecutive elements in a 
+    #======== BOURNE: column (number of rows for column-major) or a row (number of columns
+    #======== BOURNE: for row-major).
     g_lds,
     # number of gemms
     group_size,
@@ -84,7 +87,10 @@ def grouped_matmul_kernel(
 ):
     tile_idx = tl.program_id(0)
     last_problem_end = 0
+    #======== BOURNE: why to create the variable ??????
+    #======== BOURNE: does it mean the final tile processed in the previous run ??????
     for g in range(group_size):
+    #======== BOURNE: will the for loop and below while loop be unrolled by the compiler for prallel execution ??????
         # get the gemm size of the current problem
         gm = tl.load(group_gemm_sizes + g * 3)
         gn = tl.load(group_gemm_sizes + g * 3 + 1)
@@ -102,6 +108,8 @@ def grouped_matmul_kernel(
             a_ptr = tl.load(group_a_ptrs + g).to(tl.pointer_type(tl.float16))
             b_ptr = tl.load(group_b_ptrs + g).to(tl.pointer_type(tl.float16))
             c_ptr = tl.load(group_c_ptrs + g).to(tl.pointer_type(tl.float16))
+            #======== BOURNE: group_a_ptrs is one base pointer to one array of pointers, each pointing to a different memory region.
+            #======== BOURNE: here it loads the g-th pointer from the array of pointers 'group_a_ptrs'.
             # figure out tile coordinates
             tile_idx_in_gemm = tile_idx - last_problem_end
             tile_m_idx = tile_idx_in_gemm // num_n_tiles
@@ -118,6 +126,10 @@ def grouped_matmul_kernel(
                 # hint to Triton compiler to do proper loop pipelining
                 tl.multiple_of(a_ptrs, [16, 16])
                 tl.multiple_of(b_ptrs, [16, 16])
+                #======== BOURNE: to unerstand it later ......
+                #======== BOURNE: provide the compiler with additional information about the alignment and size properties of the memory pointers.
+                #======== BOURNE: [16, 16] specifies that the dimensions of the data pointed to by a_ptrs are multiples of 16. 
+                #======== BOURNE: This typically refers to the leading dimensions or strides of the matrices.
                 # assume full tile for now
                 a = tl.load(a_ptrs)
                 b = tl.load(b_ptrs)
