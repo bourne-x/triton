@@ -19,6 +19,7 @@ import torch
 import triton
 import triton.language as tl
 from triton.language.extra import libdevice
+#======== BOURNE: import the external library
 
 
 @triton.jit
@@ -34,6 +35,7 @@ def asin_kernel(
     mask = offsets < n_elements
     x = tl.load(x_ptr + offsets, mask=mask)
     x = libdevice.asin(x)
+    #========= BOURNE: call the function from the external library.
     tl.store(y_ptr + offsets, x, mask=mask)
 
 
